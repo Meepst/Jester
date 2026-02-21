@@ -1,6 +1,7 @@
 <p align="center">
   <img src="./frontend/src/assets/jester_nobg.png" alt="Jester" width="120" />
 </p>
+
 ## Jester -- AI Concierge for Las Vegas Hotels
 
 Jester is a character-driven AI customer service chatbot built for Las Vegas hotels. Rather than replacing a property's theatrical identity with a generic support widget, Jester *becomes* the brand — each hotel gets its own persona, voice, and knowledge base, grounded in real property information to prevent hallucination.
