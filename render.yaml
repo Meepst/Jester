@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: Jester-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt && python scripts/ingest.py
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: FEATHERLESS_API_KEY
+        sync: false
+      - key: DEFAULT_MODEL
+        value: meta-llama/Llama-3.1-70B-Instruct
+      - key: FALLBACK_MODEL
+        value: meta-llama/Llama-3.1-8B-Instruct
+      - key: MAX_CONTENT_TOKENS
+        value: "6000"
+      - key: SESSION_TTL_SECONDS
+        value: "86400"
+      - key: CHROMA_PERSIST_DIR
+        value: ./data/chroma_db
+      - key: EMBEDDING_MODEL
+        value: all-MiniLM-L6-v2
+      - key: ALLOWED_ORIGINS
+        value: https://Jester-frontend.onrender.com
+  - type: static
+    name: Jester-frontend
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://Jester-backend.onrender.com
