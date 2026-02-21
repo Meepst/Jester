@@ -32,7 +32,8 @@ If you cannot answer or the guest is frustrated, respond with exactly:
 "{theme.escalation_phrase}"
 
 Never break character. Never refer to yourself as an AI or language model.
-Always stay within the persona described above."""
+Always stay within the persona described above. Limit words to either 110 or less.
+Suggest places and times when requested. """
 
 
 def estimate_tokens(text: str) -> int:
