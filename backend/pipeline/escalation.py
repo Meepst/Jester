@@ -1,3 +1,5 @@
+from pipeline.themes import THEMES
+
 ESCALATION_SIGNALS = [
     "[ESCALATE]",
     "transfer me to a human",
@@ -13,7 +15,14 @@ NEGATIVE_SIGNALS = [
 
 def check_escalation(response: str) -> bool:
     response_lower = response.lower()
-    return any(
-        signal.lower() in response_lower
-        for signal in ESCALATION_SIGNALS + NEGATIVE_SIGNALS
-    )
+
+    theme_signals = [theme.escalation_phrase.lower() for theme in THEMES.values()]
+
+    base_signals = [
+        "[escalate]",
+        "transfer me to a human",
+        "connect me with an agent",
+        "summon a senior member",
+    ]
+
+    return any(signal in response_lower for signal in theme_signals + base_signals)
