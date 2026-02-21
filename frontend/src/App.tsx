@@ -1,9 +1,4 @@
-import {
-  useState,
-  useRef,
-  useEffect,
-  type HTMLInputTypeAttribute,
-} from "react";
+import { useState, useRef, useEffect } from "react";
 import { useChat } from "./hooks/useChat";
 
 const SESSION_ID = crypto.randomUUID();
