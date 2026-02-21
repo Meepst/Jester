@@ -1,6 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useChat } from "./hooks/useChat";
 
+declare module "react" {
+  interface CSSProperties {
+    [key: `--${string}`]: string | number | undefined;
+  }
+}
+
 // ── Asset imports ─────────────────────────────────────────────────────────────
 import cowboyUrl from "./assets/cowboy.svg";
 import horusUrl from "./assets/horus.svg";
@@ -10,8 +16,27 @@ import parrotUrl from "./assets/parrot.svg";
 import defaultUrl from "./assets/default.svg";
 import jesterUrl from "./assets/jester_nobg.png";
 
+// ── Hotel type ─────────────────────────────────────────────────────────────
+interface Hotel {
+  id: string;
+  name: string;
+  shortName: string;
+  icon: string;
+  tagline: string;
+  theme: string;
+  accent: string;
+  accentSoft: string;
+  bg: string;
+  bubbleUser: string;
+  bubbleBot: string;
+  border: string;
+  headerBg: string;
+  pattern: string;
+  presets: { label: string; text: string }[];
+}
+
 // ── Hotel definitions ─────────────────────────────────────────────────────────
-const HOTELS = [
+const HOTELS: Hotel[] = [
   {
     id: "santafe",
     name: "Santa Fe Station",
@@ -230,7 +255,7 @@ const SESSION_IDS = Object.fromEntries(
 );
 
 // ── CSS-filter colorizer (tints white SVGs to any hex color) ──────────────────
-function hexToFilter(hex) {
+function hexToFilter(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
   const g = parseInt(hex.slice(3, 5), 16) / 255;
   const b = parseInt(hex.slice(5, 7), 16) / 255;
@@ -252,7 +277,14 @@ function hexToFilter(hex) {
   return `invert(1) sepia(1) saturate(${sat * 3}%) hue-rotate(${h - 30}deg) brightness(${lit + 20}%)`;
 }
 
-function SvgIcon({ src, color, size = 24, style = {} }) {
+interface SvgIconProps {
+  src: string;
+  color: string;
+  size?: number;
+  style?: React.CSSProperties;
+}
+
+function SvgIcon({ src, color, size = 24, style = {} }: SvgIconProps) {
   return (
     <img
       src={src}
@@ -272,9 +304,14 @@ function SvgIcon({ src, color, size = 24, style = {} }) {
 }
 
 // ── Background patterns ───────────────────────────────────────────────────────
-function PatternBg({ type, accent }) {
+interface PatternBgProps {
+  type: string;
+  accent: string;
+}
+
+function PatternBg({ type, accent }: PatternBgProps) {
   const c = accent + "14";
-  const shapes = {
+  const shapes: Record<string, React.ReactElement> = {
     stars: (
       <pattern id="pat" width="44" height="44" patternUnits="userSpaceOnUse">
         <polygon
@@ -364,17 +401,24 @@ function PatternBg({ type, accent }) {
 }
 
 // ── Landing page ──────────────────────────────────────────────────────────────
-function LandingPage({ onSelect }) {
-  const [hovered, setHovered] = useState(null);
+interface LandingPageProps {
+  onSelect: (hotel: Hotel) => void;
+}
+
+function LandingPage({ onSelect }: LandingPageProps) {
+  const [hovered, setHovered] = useState<number | null>(null);
   const n = HOTELS.length;
   const positions = HOTELS.map((_, i) => ((i + 0.5) / n) * 100);
 
   // Starfield canvas — gold + blue twinkling particles
   useEffect(() => {
-    const canvas = document.getElementById("starfield");
+    const canvas = document.getElementById(
+      "starfield",
+    ) as HTMLCanvasElement | null;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    let raf;
+    if (!ctx) return;
+    let raf: number;
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -533,18 +577,31 @@ function LandingPage({ onSelect }) {
 }
 
 // ── Chat panel ────────────────────────────────────────────────────────────────
-// Extracted so key={hotel.id} forces a clean remount on hotel switch,
-// resetting local input/image state without touching session history.
-function ChatPanel({ hotel }) {
+interface ChatPanelProps {
+  hotel: Hotel;
+}
+
+function ChatPanel({ hotel }: ChatPanelProps) {
   const sessionId = SESSION_IDS[hotel.id];
-  const { messages, streaming, sendMessage } = useChat(sessionId, hotel.theme);
+  const { messages, streaming, sendMessage, sendGreeting } = useChat(
+    sessionId,
+    hotel.theme,
+  );
+
+  const greetedRef = useRef(false);
+
+  useEffect(() => {
+    if (greetedRef.current) return;
+    greetedRef.current = true;
+    sendGreeting();
+  }, []);
 
   const [input, setInput] = useState("");
-  const [imageBase64, setImgB64] = useState(null);
-  const [imagePreview, setPreview] = useState(null);
-  const bottomRef = useRef(null);
-  const fileRef = useRef(null);
-  const textareaRef = useRef(null);
+  const [imageBase64, setImgB64] = useState<string | null>(null);
+  const [imagePreview, setPreview] = useState<string | null>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -559,14 +616,16 @@ function ChatPanel({ hotel }) {
     el.style.height = Math.min(el.scrollHeight, 120) + "px";
   }, [input]);
 
-  const handleFile = (e) => {
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
       const r = reader.result;
-      setPreview(r);
-      setImgB64(r.split(",")[1]);
+      if (typeof r === "string") {
+        setPreview(r);
+        setImgB64(r.split(",")[1]);
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -584,7 +643,7 @@ function ChatPanel({ hotel }) {
     clearImage();
   };
 
-  const cssVars = {
+  const cssVars: React.CSSProperties = {
     "--ha": hotel.accent,
     "--has": hotel.accentSoft,
     "--hbu": hotel.bubbleUser,
@@ -647,32 +706,37 @@ function ChatPanel({ hotel }) {
             </div>
           </div>
         )}
-        {messages.map((msg, i) => (
-          <div key={i} className={`mrow ${msg.role}`}>
-            {msg.role === "assistant" && (
-              <div className="av">
-                <SvgIcon src={hotel.icon} color={hotel.accent} size={18} />
+        {messages.map(
+          (
+            msg: { role: string; content: string; image?: string },
+            i: number,
+          ) => (
+            <div key={i} className={`mrow ${msg.role}`}>
+              {msg.role === "assistant" && (
+                <div className="av">
+                  <SvgIcon src={hotel.icon} color={hotel.accent} size={18} />
+                </div>
+              )}
+              <div className="bwrap">
+                <span className="blabel">
+                  {msg.role === "user" ? "You" : hotel.shortName}
+                </span>
+                <div className={`bubble ${msg.role}`}>
+                  {msg.image && <img src={msg.image} alt="attachment" />}
+                  {msg.content}
+                  {msg.role === "assistant" &&
+                    streaming &&
+                    i === messages.length - 1 && <span className="cur">▋</span>}
+                </div>
               </div>
-            )}
-            <div className="bwrap">
-              <span className="blabel">
-                {msg.role === "user" ? "You" : hotel.shortName}
-              </span>
-              <div className={`bubble ${msg.role}`}>
-                {msg.image && <img src={msg.image} alt="attachment" />}
-                {msg.content}
-                {msg.role === "assistant" &&
-                  streaming &&
-                  i === messages.length - 1 && <span className="cur">▋</span>}
-              </div>
+              {msg.role === "user" && (
+                <div className="av uav">
+                  <SvgIcon src={defaultUrl} color="#aaaaaa" size={18} />
+                </div>
+              )}
             </div>
-            {msg.role === "user" && (
-              <div className="av uav">
-                <SvgIcon src={defaultUrl} color="#aaaaaa" size={18} />
-              </div>
-            )}
-          </div>
-        ))}
+          ),
+        )}
         <div ref={bottomRef} />
       </div>
 
@@ -751,11 +815,11 @@ function ChatPanel({ hotel }) {
 
 // ── Root App ──────────────────────────────────────────────────────────────────
 export default function App() {
-  const [hotel, setHotel] = useState(null); // null = landing
-  const [pendingHotel, setPending] = useState(null);
+  const [hotel, setHotel] = useState<Hotel | null>(null); // null = landing
+  const [pendingHotel, setPending] = useState<Hotel | null>(null);
   const [showModal, setModal] = useState(false);
 
-  const requestSwitch = (h) => {
+  const requestSwitch = (h: Hotel) => {
     if (!hotel || h.id === hotel.id) return;
     setPending(h);
     setModal(true);
