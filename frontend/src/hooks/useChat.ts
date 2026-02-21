@@ -8,7 +8,7 @@ export type Message = {
   error?: boolean;
 };
 
-export function useChat(sessionId: string) {
+export function useChat(sessionId: string, theme: string = "default") {
   const [messages, setMessages] = useState<Message[]>([]);
   const [streaming, setStreaming] = useState(false);
 
@@ -24,6 +24,7 @@ export function useChat(sessionId: string) {
       sessionId,
       text,
       imageBase64,
+      theme,
       (token) => {
         setMessages((prev) => {
           const updated = [...prev];

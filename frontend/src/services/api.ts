@@ -4,6 +4,7 @@ export async function streamMessage(
   sessionId: string,
   message: string,
   imageBase64: string | undefined,
+  theme: string = "default",
   onToken: (token: string) => void,
   onDone: () => void,
   onError?: (error: string) => void,
@@ -11,7 +12,7 @@ export async function streamMessage(
   const response = await fetch(`${API_URL}/chat/${sessionId}/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, image: imageBase64 ?? null }),
+    body: JSON.stringify({ message, image: imageBase64 ?? null, theme }),
   });
 
   if (!response.ok) {
