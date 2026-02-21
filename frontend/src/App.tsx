@@ -596,6 +596,17 @@ function ChatPanel({ hotel }: ChatPanelProps) {
     sendGreeting();
   }, []);
 
+  // Show presets after the greeting finishes streaming and before the user has sent anything
+  const [presetsVisible, setPresetsVisible] = useState(false);
+  const userHasSentRef = useRef(false);
+
+  useEffect(() => {
+    // Once the greeting has arrived and streaming stops, reveal presets
+    if (messages.length > 0 && !streaming && !userHasSentRef.current) {
+      setPresetsVisible(true);
+    }
+  }, [messages, streaming]);
+
   const [input, setInput] = useState("");
   const [imageBase64, setImgB64] = useState<string | null>(null);
   const [imagePreview, setPreview] = useState<string | null>(null);
@@ -638,6 +649,8 @@ function ChatPanel({ hotel }: ChatPanelProps) {
 
   const handleSend = () => {
     if ((!input.trim() && !imageBase64) || streaming) return;
+    userHasSentRef.current = true;
+    setPresetsVisible(false);
     sendMessage(input.trim(), imageBase64);
     setInput("");
     clearImage();
@@ -739,6 +752,52 @@ function ChatPanel({ hotel }: ChatPanelProps) {
         )}
         <div ref={bottomRef} />
       </div>
+
+      {/* Preset suggestions shown after greeting */}
+      {presetsVisible && (
+        <div
+          className="post-greet-presets"
+          style={{
+            padding: "12px 20px 4px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: "11px",
+              fontWeight: 600,
+              letterSpacing: "1.5px",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.28)",
+            }}
+          >
+            Quick questions
+          </div>
+          <div className="presets">
+            {hotel.presets.map((p, i) => (
+              <button
+                key={i}
+                className="preset-chip"
+                onClick={() => {
+                  userHasSentRef.current = true;
+                  setPresetsVisible(false);
+                  sendMessage(p.text);
+                }}
+                disabled={streaming}
+              >
+                <span className="preset-emoji">{p.label.split(" ")[0]}</span>
+                <span className="preset-label">
+                  {p.label.split(" ").slice(1).join(" ")}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Image preview */}
       {imagePreview && (
