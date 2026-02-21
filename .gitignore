@@ -1,5 +1,6 @@
 # secrets
 backend/.env
+backend/.venv
 frontend/.env.local
 frontend/.env.*.local
 
@@ -11,3 +12,4 @@ __pycache__/
 *.pyc
 node_modules/
 frontend/dist/
+.zed/
