@@ -1,31 +1,59 @@
 import os
-from typing import Optional
+
+from pipeline.themes import Theme, get_theme
 
 MAX_CONTEXT_TOKENS = int(os.getenv("MAX_CONTEXT_TOKENS", 6000))
+DEFAULT_THEME = os.getenv("DEFAULT_THEME", "default")
 
-SYSTEM_PROMPT = """You are a helpful and friendly support agent.
-Answer the user's questions using the provided knowledge base context where relevant.
-If you cannot answer the question or the user is frustrated, output [ESCALATE] on its own line.
-Be concise. Do not make up information that is not in the context."""
+
+def build_system_prompt(theme: Theme) -> str:
+    vocab_instruction = ""
+    if theme.vocabulary:
+        vocab_instruction = (
+            f"\nFavor these themed words and phrases where natural: "
+            f"{', '.join(theme.vocabulary)}."
+        )
+
+    forbidden_instruction = ""
+    if theme.forbidden_words:
+        forbidden_instruction = (
+            f"\nAvoid these words entirely: {', '.join(theme.forbidden_words)}."
+        )
+
+    return f"""You are {theme.persona_name}, {theme.persona_description}
+
+Company: {theme.company_name}
+Tone: {theme.tone}
+{vocab_instruction}
+{forbidden_instruction}
+
+Answer guest questions using the provided knowledge base context where relevant.
+If you cannot answer or the guest is frustrated, respond with exactly:
+"{theme.escalation_phrase}"
+
+Never break character. Never refer to yourself as an AI or language model.
+Always stay within the persona described above."""
 
 
 def estimate_tokens(text: str) -> int:
-    # rough estimate: 1 token ≈ 4 characters
     return len(text) // 4
 
 
 def trim_history(history: list, max_tokens: int) -> list:
     trimmed = list(history)
     while estimate_tokens(str(trimmed)) > max_tokens and len(trimmed) > 1:
-        # remove oldest non-system turn
         trimmed.pop(0)
     return trimmed
 
 
 def build_messages(
-    history: list, chunks: list | None = None, image_base64: str | None = None
+    history: list,
+    chunks: list | None = None,
+    image_base64: str | None = None,
+    theme_key: str = DEFAULT_THEME,
 ) -> list:
-    system_content = SYSTEM_PROMPT
+    theme = get_theme(theme_key)
+    system_content = build_system_prompt(theme)
 
     if chunks:
         context = "\n\n".join(chunks)
@@ -34,11 +62,8 @@ def build_messages(
     system_message = {"role": "system", "content": system_content}
     trimmed_history = trim_history(history, MAX_CONTEXT_TOKENS)
 
-    messages = [system_message] + trimmed_history[
-        :-1
-    ]  # everything except the last user turn
+    messages = [system_message] + trimmed_history[:-1]
 
-    # rebuild the last user turn with image if present
     last_user_text = trimmed_history[-1]["content"] if trimmed_history else ""
 
     if image_base64:
@@ -49,10 +74,7 @@ def build_messages(
                     "type": "image_url",
                     "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"},
                 },
-                {
-                    "type": "text",
-                    "text": last_user_text or "What do you see in this image?",
-                },
+                {"type": "text", "text": last_user_text or "What do you see?"},
             ],
         }
     else:

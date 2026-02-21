@@ -18,6 +18,7 @@ store = SessionStore()
 class MessageRequest(BaseModel):
     message: str
     image: str | None = None
+    theme: str = "default"
 
 
 @router.post("/{session_id}/stream")
@@ -27,12 +28,17 @@ async def stream(session_id: str, body: MessageRequest):
     if session["escalated"]:
         raise HTTPException(status_code=409, detail="Session has been escalated.")
 
+    if "theme" not in session:
+        session["theme"] = body.theme
+
     session["history"].append({"role": "user", "content": body.message})
 
     async def generate():
         try:
             chunks = retrieve(body.message)
-            messages = build_messages(session["history"], chunks, body.image)
+            messages = build_messages(
+                session["history"], chunks, body.image, theme_key=session["theme"]
+            )
 
             full_response = ""
             async for token in stream_completion(messages):
