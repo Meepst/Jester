@@ -22,8 +22,9 @@ services:
         value: all-MiniLM-L6-v2
       - key: ALLOWED_ORIGINS
         value: https://Jester-frontend.onrender.com
-staticSites:
-  - name: Jester-frontend
+  - type: web
+    name: Jester-frontend
+    runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
