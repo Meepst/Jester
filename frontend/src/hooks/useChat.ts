@@ -147,7 +147,7 @@ export function useChat(sessionId: string, theme: string) {
       const response = await fetch(`${API_URL}/chat/${sessionId}/greeting`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ theme }),
+        body: JSON.stringify({ theme, message: "" }),
       });
 
       if (!response.ok) {
