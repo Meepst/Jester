@@ -3,12 +3,11 @@ import json
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-
 from pipeline.escalation import check_escalation
 from pipeline.featherless import stream_completion
 from pipeline.prompt import build_messages
 from pipeline.rag import retrieve
+from pydantic import BaseModel
 from session.store import SessionStore
 
 router = APIRouter(prefix="/chat")
@@ -66,4 +65,36 @@ async def stream(session_id: str, body: MessageRequest):
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",  # important for nginx proxies
         },
+    )
+
+
+@router.post("/{session_id}/greeting")
+async def greeting(session_id: str, body: MessageRequest):
+    session = store.get_or_create(session_id)
+    session["theme"] = body.theme  # set theme on session
+
+    async def generate():
+        messages = build_messages([], None, None, theme_key=body.theme)
+        # Override last user message to be the greeting trigger
+        messages.append(
+            {
+                "role": "user",
+                "content": "Please greet the guest with your opening greeting.",
+            }
+        )
+
+        full_response = ""
+        async for token in stream_completion(messages):
+            full_response += token
+            yield f"data: {json.dumps({'token': token})}\n\n"
+
+        # Save greeting to history as assistant-only — no user turn
+        session["history"].append({"role": "assistant", "content": full_response})
+        store.save(session_id, session)
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
