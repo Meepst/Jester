@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/jester.jpg" alt="Jester" width="120" />
+  <img src="./frontend/src/assets/jester_nobg.png" alt="Jester" width="120" />
 </p>
 # Jester -- AI Concierge for Las Vegas Hotels
 
