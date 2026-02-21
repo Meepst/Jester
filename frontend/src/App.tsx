@@ -14,7 +14,7 @@ function App() {
   const [imageBase64, setImageBase64] = useState<string | undefined>();
   const [imagePreview, setImagePreview] = useState<string | undefined>();
   const bottomRef = useRef<HTMLDivElement>(null);
-  const fileRef = useRef<HTMLInputTypeAttribute>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -36,7 +36,7 @@ function App() {
   const clearImage = () => {
     setImageBase64(undefined);
     setImagePreview(undefined);
-    if (fileRef.current) fileRef.current.replace("", fileRef.current);
+    if (fileRef.current) fileRef.current.value = "";
   };
 
   const handleSend = () => {
