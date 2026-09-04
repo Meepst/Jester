@@ -18,9 +18,9 @@ Characters stay in persona throughout the conversation, answer questions using p
 
 ---
 
-## Live Link
+## Demo Videos
 
-https://jester-frontend.onrender.com/
+[https://jester-frontend.onrender.com/](https://devpost.com/software/jester-p5mev1?ref_content=my-projects-tab&ref_feature=my_projects)
 
 ---
 
